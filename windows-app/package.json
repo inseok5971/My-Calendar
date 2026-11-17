@@ -1,0 +1,35 @@
+{
+  "name": "my-calendar-win",
+  "version": "1.0.0",
+  "description": "나만의 캘린더 - 직장인을 위한 스마트 스케줄러 & 미니 위젯",
+  "main": "src/main.js",
+  "scripts": {
+    "start": "electron .",
+    "dist:win": "electron-builder --win --x64"
+  },
+  "build": {
+    "appId": "com.jis.mycalendar",
+    "productName": "나만의 캘린더",
+    "win": {
+      "icon": "assets/icon.ico",
+      "target": [
+        "nsis",
+        "portable"
+      ]
+    },
+    "nsis": {
+      "oneClick": false,
+      "allowToChangeInstallationDirectory": true,
+      "createDesktopShortcut": true,
+      "createStartMenuShortcut": true,
+      "shortcutName": "나만의 캘린더"
+    },
+    "directories": {
+      "output": "dist"
+    }
+  },
+  "devDependencies": {
+    "electron": "^33.2.0",
+    "electron-builder": "^25.1.8"
+  }
+}

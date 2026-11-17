@@ -1,0 +1,168 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <title>미니 보드</title>
+  <link rel="stylesheet" href="style.css">
+  <style>
+    body {
+      background: #ffffff;
+      padding: 0;
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+    }
+    .mini-header {
+      -webkit-app-region: drag;
+      padding: 10px 12px 6px;
+      border-bottom: 1px solid var(--border-color);
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      background: #ffffff;
+    }
+    .mini-top-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .mini-title {
+      font-size: 13px;
+      font-weight: 700;
+    }
+    .mini-btn-group {
+      -webkit-app-region: no-drag;
+      display: flex;
+      gap: 6px;
+    }
+    .mini-btn {
+      padding: 4px 8px;
+      font-size: 11px;
+      font-weight: 600;
+      border-radius: 6px;
+      border: 1px solid var(--border-color);
+      background: #ffffff;
+      cursor: pointer;
+    }
+    .mini-btn.pinned {
+      background: var(--primary-color);
+      color: white;
+      border-color: var(--primary-color);
+    }
+    .mini-body {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      padding: 10px;
+      overflow: hidden;
+    }
+  </style>
+</head>
+<body>
+  <div class="mini-header">
+    <div class="mini-top-row">
+      <span class="mini-title" style="display: inline-flex; align-items: center; gap: 6px;">
+        <svg class="icon-svg board-svg" style="width: 14px; height: 14px; color: var(--primary-color);" viewBox="0 0 20 20" fill="currentColor"><path d="M3 4a1 1 0 011-1h12a1 1 0 011 1v2a1 1 0 01-1 1H4a1 1 0 01-1-1V4zM3 10a1 1 0 011-1h12a1 1 0 011 1v6a1 1 0 01-1 1H4a1 1 0 01-1-1v-6z"/></svg>
+        미니 보드
+      </span>
+      <div class="mini-btn-group">
+        <button id="btnReturnToMain" class="mini-btn" style="display: inline-flex; align-items: center; gap: 4px; background: #2563eb; color: white;">
+          <svg class="icon-svg cal-svg" style="width: 13px; height: 13px;" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M6 2a1 1 0 00-1 1v1H4a2 2 0 00-2 2v10a2 2 0 002 2h12a2 2 0 002-2V6a2 2 0 00-2-2h-1V3a1 1 0 10-2 0v1H7V3a1 1 0 00-1-1zm0 5a1 1 0 000 2h8a1 1 0 100-2H6z" clip-rule="evenodd"/></svg>
+          스케줄러
+        </button>
+        <button id="btnPinToggle" class="mini-btn pinned" style="display: inline-flex; align-items: center; gap: 4px;">
+          <svg class="icon-svg pin-svg" style="width: 12px; height: 12px;" viewBox="0 0 20 20" fill="currentColor"><path d="M10 2a1 1 0 011 1v1.17a3.001 3.001 0 011.606 1.455l1.83 3.66A1 1 0 0113.541 11H11v6a1 1 0 11-2 0v-6H6.459a1 1 0 01-.895-1.447l1.83-3.66A3.001 3.001 0 019 4.17V3a1 1 0 011-1z"/></svg>
+          항상 위
+        </button>
+      </div>
+    </div>
+    <div style="display: flex; align-items: center; gap: 8px; font-size: 11px; color: var(--text-muted);">
+      <span>투명도</span>
+      <input type="range" id="miniOpacitySlider" min="45" max="100" value="95" style="-webkit-app-region: no-drag; flex: 1;">
+      <span id="miniOpacityLabel">95%</span>
+    </div>
+  </div>
+
+  <div class="mini-body">
+    <!-- Tabs: 오늘, 이번 주, 이번 달, 메모 -->
+    <div class="tabs-segmented">
+      <button class="tab-btn active" data-tab="today">오늘</button>
+      <button class="tab-btn" data-tab="week">이번 주</button>
+      <button class="tab-btn" data-tab="month">이번 달</button>
+      <button class="tab-btn" data-tab="memo">메모</button>
+    </div>
+
+    <!-- Normal Schedule / Todo View -->
+    <div id="miniNormalContainer" style="display: flex; flex-direction: column; flex: 1; overflow: hidden;">
+      <div class="quick-add-bar">
+        <input type="text" id="miniQuickAddInput" class="quick-input" placeholder="할 일 추가 (Enter)">
+      </div>
+
+      <div id="miniCardsList" class="cards-scroll-view">
+        <!-- Cards rendered dynamically -->
+      </div>
+    </div>
+
+    <!-- Sticky Notes Memo Board View -->
+    <div id="miniMemoContainer" style="display: none; flex-direction: column; flex: 1; overflow: hidden;">
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+        <span style="font-size: 12px; font-weight: bold; color: var(--text-muted);">스티커 메모</span>
+        <button id="btnAddNewMemo" class="mini-btn" style="background: #f1f5f9; color: var(--text-main);">+ 새 메모</button>
+      </div>
+      <div id="miniMemoList" class="cards-scroll-view">
+        <!-- Sticky notes rendered dynamically -->
+      </div>
+    </div>
+  </div>
+
+  <!-- Edit Modal Sheet for Mini Board -->
+  <div id="miniEditModal" class="modal-overlay" style="display: none;">
+    <div class="modal-content" style="width: 320px;">
+      <div class="modal-header">
+        <h4 id="miniEditModalTitle">일정 / 할 일 수정</h4>
+        <button id="btnCloseMiniEditModal" style="background: none; border: none; font-size: 16px; cursor: pointer;">&times;</button>
+      </div>
+      <div class="modal-body" style="padding: 12px; gap: 10px;">
+        <div class="form-group">
+          <label class="form-label">제목</label>
+          <input type="text" id="miniEditTitleInput" class="form-input">
+        </div>
+
+        <div id="miniEditScopeGroup" class="form-group" style="display: none;">
+          <label class="form-label">범위</label>
+          <select id="miniEditScopeSelect" class="form-input">
+            <option value="today">오늘</option>
+            <option value="week">이번 주</option>
+            <option value="month">이번 달</option>
+          </select>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">프로젝트 폴더 (Finder/탐색기 바로가기)</label>
+          <div style="display: flex; gap: 6px;">
+            <input type="text" id="miniEditFolderInput" class="form-input" style="flex: 1; font-size: 11px;" placeholder="연결된 폴더 없음" readonly>
+            <button id="btnChooseMiniFolder" class="mini-btn" style="display: inline-flex; align-items: center; gap: 4px; white-space: nowrap;">
+              <svg class="icon-svg folder-svg" viewBox="0 0 20 20" fill="currentColor"><path d="M2 6a2 2 0 012-2h4l2 2h6a2 2 0 012 2v7a2 2 0 01-2 2H4a2 2 0 01-2-2V6z"/></svg>
+              선택
+            </button>
+            <button id="btnClearMiniFolder" style="border: none; background: none; color: #ef4444; cursor: pointer;">&times;</button>
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">메모</label>
+          <textarea id="miniEditNotesInput" class="form-input" rows="2"></textarea>
+        </div>
+      </div>
+      <div class="modal-footer" style="padding: 10px 12px;">
+        <button id="btnDeleteMiniItem" class="mini-btn" style="color: #ef4444; border-color: #fca5a5;">삭제</button>
+        <button id="btnSaveMiniItem" class="btn-primary" style="padding: 6px 14px; font-size: 12px; margin-left: auto;">저장</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="icons.js"></script>
+  <script src="holidays.js"></script>
+  <script src="mini.js"></script>
+</body>
+</html>
