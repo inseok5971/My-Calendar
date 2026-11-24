@@ -65,7 +65,11 @@
 
 > 💡 **Raycast 2.0 스타일 100% 화면 중심 쇼케이스**  
 > 영상 퀄리티: 1080p Full HD, 60fps 부드러운 네이티브 인터랙션 모션  
-> 시연 영상 파일: [`나만의_캘린더_공모전_3분시연영상.mp4`](file:///Users/jis/Desktop/Portfolio/마이캘린더%20공모전/나만의_캘린더_공모전_3분시연영상.mp4)
+> 시연 영상 파일: [`나만의_캘린더_공모전_3분시연영상.mp4`](./MyCalendar_8s_Demo.gif)
+
+<p align="center">
+  <img src="./MyCalendar_8s_Demo.gif" alt="MyCalendar v2.0 Live Demo" width="800">
+</p>
 
 ---
 
