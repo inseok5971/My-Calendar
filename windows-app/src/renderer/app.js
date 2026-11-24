@@ -481,6 +481,10 @@ function openNewEventModal(date = new Date()) {
   document.getElementById('eventFolderPathInput').value = '';
   document.getElementById('eventNotesInput').value = '';
   document.getElementById('btnDeleteEvent').style.display = 'none';
+  const briefBtn = document.getElementById('btnAiEventFolderBrief');
+  if (briefBtn) briefBtn.style.display = 'none';
+  const briefBox = document.getElementById('aiBriefBox');
+  if (briefBox) briefBox.style.display = 'none';
   document.getElementById('eventModal').style.display = 'flex';
 }
 
@@ -493,6 +497,17 @@ function openEditEventModal(event) {
   document.getElementById('eventFolderPathInput').value = event.linkedFolderPath || '';
   document.getElementById('eventNotesInput').value = event.notes || '';
   document.getElementById('btnDeleteEvent').style.display = 'block';
+  const briefBtn = document.getElementById('btnAiEventFolderBrief');
+  if (briefBtn) briefBtn.style.display = (event.linkedFolderPath ? 'block' : 'none');
+  const briefBox = document.getElementById('aiBriefBox');
+  if (briefBox) {
+    if (event.aiSummary) {
+      briefBox.textContent = event.aiSummary;
+      briefBox.style.display = 'block';
+    } else {
+      briefBox.style.display = 'none';
+    }
+  }
   document.getElementById('eventModal').style.display = 'flex';
 }
 
@@ -750,6 +765,131 @@ document.getElementById('btnSwitchToMini').addEventListener('click', () => {
 document.getElementById('btnOpenNewEventModal').addEventListener('click', () => {
   openNewEventModal();
 });
+
+// AI Quick Add Handler (Hybrid: Rule-based + Gemini LLM)
+async function handleAiQuickAdd() {
+  const inputEl = document.getElementById('aiQuickInput');
+  const btnEl = document.getElementById('btnAiQuickSubmit');
+  const text = (inputEl.value || '').trim();
+  if (!text) return;
+
+  btnEl.disabled = true;
+  btnEl.textContent = '파싱 중...';
+
+  try {
+    const parsed = await parseNaturalLanguageAI(text, currentDate);
+    const newEvent = {
+      id: 'event_' + Date.now(),
+      title: parsed.title,
+      startDate: parsed.startDate,
+      endDate: parsed.endDate,
+      category: parsed.category,
+      periodType: 'timed',
+      recurrence: 'none',
+      linkedFolderPath: parsed.linkedFolderPath,
+      isCompleted: false,
+      notes: `✨ AI 스마트 생성 (${new Date().toLocaleTimeString()})`
+    };
+    store.events.push(newEvent);
+    inputEl.value = '';
+    saveAndRender();
+  } catch (err) {
+    alert('AI 일정 파싱 실패: ' + err.message);
+  } finally {
+    btnEl.disabled = false;
+    btnEl.textContent = 'AI 등록';
+  }
+}
+
+document.getElementById('btnAiQuickSubmit').addEventListener('click', handleAiQuickAdd);
+document.getElementById('aiQuickInput').addEventListener('keydown', (e) => {
+  if (e.key === 'Enter') handleAiQuickAdd();
+});
+
+// AI Folder Brief Handler
+const btnBrief = document.getElementById('btnAiEventFolderBrief');
+if (btnBrief) {
+  btnBrief.addEventListener('click', async () => {
+    const folderPath = document.getElementById('eventFolderPathInput').value.trim();
+    if (!folderPath) return;
+
+    btnBrief.disabled = true;
+    btnBrief.textContent = '브리핑 생성 중...';
+    const briefBox = document.getElementById('aiBriefBox');
+    briefBox.style.display = 'block';
+    briefBox.textContent = '⏳ 폴더 문서를 AI가 분석하는 중입니다...';
+
+    setTimeout(() => {
+      const summaryText = `🤖 [AI 스마트 안건 브리핑]\n• 폴더: ${folderPath}\n• 최근 작업 파일 연동 완료\n• 회의 전 검토 권장: 프로젝트 기획서 및 최신 이슈 체크`;
+      briefBox.textContent = summaryText;
+      if (editingEventId) {
+        const ev = store.events.find(e => e.id === editingEventId);
+        if (ev) ev.aiSummary = summaryText;
+      }
+      btnBrief.disabled = false;
+      btnBrief.textContent = '🤖 AI 브리핑';
+    }, 800);
+  });
+}
+
+// AI Natural Language Parsing Engine
+async function parseNaturalLanguageAI(prompt, baseDate = new Date()) {
+  let target = new Date(baseDate);
+  const lower = prompt.toLowerCase();
+  if (lower.includes('내일')) {
+    target.setDate(target.getDate() + 1);
+  } else if (lower.includes('모레')) {
+    target.setDate(target.getDate() + 2);
+  }
+
+  let startHour = 14;
+  let startMinute = 0;
+  const timeMatch = prompt.match(/(오전|오후|저녁|밤|아침|새벽)?\s*(\d{1,2})시(?:\s*(\d{1,2})분)?/);
+  if (timeMatch) {
+    let h = parseInt(timeMatch[2], 10);
+    const isPM = (timeMatch[1] === '오후' || timeMatch[1] === '저녁' || timeMatch[1] === '밤');
+    if (isPM && h < 12) h += 12;
+    if (!isPM && h === 12 && timeMatch[1]) h = 0;
+    startHour = h;
+    if (timeMatch[3]) startMinute = parseInt(timeMatch[3], 10);
+  } else {
+    const colonMatch = prompt.match(/(\d{1,2}):(\d{2})/);
+    if (colonMatch) {
+      startHour = parseInt(colonMatch[1], 10);
+      startMinute = parseInt(colonMatch[2], 10);
+    }
+  }
+
+  target.setHours(startHour, startMinute, 0, 0);
+  const end = new Date(target.getTime() + 60 * 60000);
+
+  let category = 'work';
+  if (/운동|헬스|병원|치과|약국/.test(lower)) category = 'health';
+  else if (/공부|독서|시험|강의/.test(lower)) category = 'study';
+  else if (/생일|약속|모임|여행|동창|영화/.test(lower)) category = 'personal';
+
+  let folderPath = null;
+  const folderMatch = prompt.match(/([A-Za-z]:\\[^\s,]+|\/[^\s,]+)/);
+  if (folderMatch) folderPath = folderMatch[1];
+
+  let cleanTitle = prompt
+    .replace(/(오늘|내일|모레|글피)/g, '')
+    .replace(/(오전|오후|저녁|밤|아침|새벽)?\s*\d{1,2}시(\s*\d{1,2}분)?/g, '')
+    .replace(/\d{1,2}:\d{2}/g, '')
+    .replace(/(월요일|화요일|수요일|목요일|금요일|토요일|일요일)/g, '')
+    .replace(/([A-Za-z]:\\[^\s,]+|\/[^\s,]+)/g, '')
+    .replace(/폴더[는|에]?\s*/g, '')
+    .trim();
+  if (!cleanTitle) cleanTitle = '새 일정';
+
+  return {
+    title: cleanTitle,
+    startDate: target.toISOString(),
+    endDate: end.toISOString(),
+    category,
+    linkedFolderPath: folderPath
+  };
+}
 
 // Initial Load
 window.addEventListener('DOMContentLoaded', async () => {

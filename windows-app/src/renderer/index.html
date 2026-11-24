@@ -83,6 +83,13 @@
         </div>
       </header>
 
+      <!-- AI Smart Bar -->
+      <div class="ai-quick-add-bar" style="display: flex; gap: 8px; align-items: center; padding: 6px 14px; background: rgba(147, 51, 234, 0.08); border-bottom: 1px solid rgba(147, 51, 234, 0.18);">
+        <span style="font-size: 14px; color: #9333ea;">✨</span>
+        <input type="text" id="aiQuickInput" class="form-input" style="flex: 1; padding: 5px 10px; font-size: 12px; border: 1px solid rgba(147, 51, 234, 0.3);" placeholder="🤖 AI 스마트 일정 등록 (예: 내일 오후 3시 기획팀 회의, 폴더는 C:\Work)">
+        <button id="btnAiQuickSubmit" class="btn-primary" style="background: #9333ea; padding: 5px 12px; font-size: 12px; white-space: nowrap;">AI 등록</button>
+      </div>
+
       <!-- Month Container -->
       <div id="monthViewContainer" class="month-container">
         <div class="weekday-header-row">
@@ -153,12 +160,14 @@
           <label class="form-label">연결된 프로젝트 폴더 (Finder/탐색기 바로가기)</label>
           <div style="display: flex; gap: 8px; align-items: center;">
             <input type="text" id="eventFolderPathInput" class="form-input" style="flex: 1;" placeholder="연결된 폴더 없음" readonly>
+            <button id="btnAiEventFolderBrief" class="btn-primary" style="background: #9333ea; padding: 6px 10px; font-size: 11px; white-space: nowrap; display: none;">🤖 AI 브리핑</button>
             <button id="btnChooseEventFolder" class="nav-btn" style="display: inline-flex; align-items: center; gap: 6px; white-space: nowrap;">
               <svg class="icon-svg folder-svg" viewBox="0 0 20 20" fill="currentColor"><path d="M2 6a2 2 0 012-2h4l2 2h6a2 2 0 012 2v7a2 2 0 01-2 2H4a2 2 0 01-2-2V6z"/></svg>
               폴더 선택
             </button>
             <button id="btnClearEventFolder" style="border: none; background: none; color: #ef4444; font-size: 16px; cursor: pointer;">&times;</button>
           </div>
+          <div id="aiBriefBox" style="display: none; margin-top: 6px; padding: 8px 10px; background: rgba(147, 51, 234, 0.08); border-radius: 6px; font-size: 12px; color: var(--text-color); line-height: 1.4;"></div>
         </div>
 
         <div class="form-group">

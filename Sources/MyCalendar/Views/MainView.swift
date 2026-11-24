@@ -15,6 +15,7 @@ struct MainView: View {
         @Published var editingTodo: TodoItem?
         @Published var isCreatingTodo: Bool = false
         @Published var showSettings: Bool = false
+        @Published var aiInputText: String = ""
     }
 
     var body: some View {
@@ -25,6 +26,10 @@ struct MainView: View {
                     .navigationSplitViewColumnWidth(min: 260, ideal: 290, max: 360)
             } detail: {
                 VStack(spacing: 0) {
+                    aiQuickAddBar
+                    if let banner = store.aiBannerMessage {
+                        aiStatusBanner(banner)
+                    }
                     reminderBanner
                     mainCalendarContent
                 }
@@ -106,7 +111,8 @@ struct MainView: View {
                                 AppThemeHelper.applyMainWindowOpacity(newVal)
                                 store.save()
                             }
-                        Text("\(Int(round(store.settings.mainWindowOpacity * 100)))%")
+                        let percentInt: Int = Int(round(store.settings.mainWindowOpacity * 100.0))
+                        Text("\(percentInt)%")
                             .font(.caption2.monospacedDigit())
                             .foregroundStyle(.secondary)
                             .frame(width: 32, alignment: .trailing)
@@ -335,6 +341,80 @@ struct MainView: View {
             return Self.dayTitleFormatter.string(from: store.selectedDate)
         case .week, .month:
             return Self.monthTitleFormatter.string(from: store.selectedDate)
+        }
+    }
+
+    // MARK: - AI Smart Quick-Add Bar
+
+    @ViewBuilder
+    private var aiQuickAddBar: some View {
+        HStack(spacing: 8) {
+            Image(systemName: "sparkles")
+                .foregroundColor(.purple)
+                .font(.system(size: 13, weight: .bold))
+
+            TextField("🤖 AI 스마트 일정 등록 (예: 내일 오후 3시 기획팀 회의, 폴더는 /Portfolio)", text: $ui.aiInputText)
+                .textFieldStyle(.plain)
+                .font(.system(size: 12))
+                .onSubmit {
+                    submitAIPrompt()
+                }
+
+            if store.isAILoading {
+                ProgressView()
+                    .controlSize(.small)
+            } else {
+                Button(action: submitAIPrompt) {
+                    Text("AI 등록")
+                        .font(.system(size: 11, weight: .semibold))
+                }
+                .buttonStyle(.borderedProminent)
+                .tint(.purple)
+                .controlSize(.small)
+                .disabled(ui.aiInputText.trimmingCharacters(in: .whitespaces).isEmpty)
+            }
+        }
+        .padding(.horizontal, 12)
+        .padding(.vertical, 6)
+        .background(Color.purple.opacity(0.08))
+        .overlay(
+            Rectangle()
+                .frame(height: 1)
+                .foregroundColor(Color.purple.opacity(0.18)),
+            alignment: .bottom
+        )
+    }
+
+    @ViewBuilder
+    private func aiStatusBanner(_ message: String) -> some View {
+        HStack(spacing: 6) {
+            Image(systemName: "sparkles")
+                .foregroundColor(.purple)
+                .font(.caption)
+            Text(message)
+                .font(.caption.weight(.medium))
+                .foregroundColor(.primary)
+            Spacer()
+            Button {
+                store.aiBannerMessage = nil
+            } label: {
+                Image(systemName: "xmark")
+                    .font(.caption2)
+                    .foregroundColor(.secondary)
+            }
+            .buttonStyle(.plain)
+        }
+        .padding(.horizontal, 12)
+        .padding(.vertical, 4)
+        .background(Color.purple.opacity(0.15))
+    }
+
+    private func submitAIPrompt() {
+        let text = ui.aiInputText.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !text.isEmpty else { return }
+        ui.aiInputText = ""
+        Task {
+            _ = await store.addEventWithAI(prompt: text)
         }
     }
 

@@ -12,6 +12,8 @@ final class CalendarStore: ObservableObject {
     @Published var selectedDate: Date = Date()
     @Published var viewMode: CalendarViewMode = .month
     @Published var menuBarTitleText: String = "캘린더"
+    @Published var isAILoading: Bool = false
+    @Published var aiBannerMessage: String? = nil
     var hasInitializedWindows: Bool = false
 
     private let fileURL: URL
@@ -88,6 +90,42 @@ final class CalendarStore: ObservableObject {
     }
 
     // MARK: - Event CRUD
+
+    func addEventWithAI(prompt: String) async -> ScheduleEvent? {
+        isAILoading = true
+        defer { isAILoading = false }
+        do {
+            let parsed = try await AIService.shared.parseNaturalLanguage(
+                prompt: prompt,
+                baseDate: selectedDate,
+                apiKey: settings.geminiApiKey
+            )
+            let newEvent = ScheduleEvent(
+                title: parsed.title,
+                notes: parsed.notes,
+                startDate: parsed.startDate,
+                endDate: parsed.endDate,
+                category: parsed.category,
+                linkedFolderPath: parsed.linkedFolderPath
+            )
+            addEvent(newEvent)
+            aiBannerMessage = "✨ AI 일정 등록 완료: \(parsed.title)"
+            return newEvent
+        } catch {
+            aiBannerMessage = "❌ AI 일정 등록 실패: \(error.localizedDescription)"
+            return nil
+        }
+    }
+
+    func requestFolderAISummary(for eventID: UUID) async {
+        guard let index = events.firstIndex(where: { $0.id == eventID }),
+              let folderPath = events[index].linkedFolderPath, !folderPath.isEmpty else { return }
+        isAILoading = true
+        defer { isAILoading = false }
+        let summary = await AIService.shared.summarizeFolder(folderPath: folderPath, apiKey: settings.geminiApiKey)
+        events[index].aiSummary = summary
+        save()
+    }
 
     func addEvent(_ event: ScheduleEvent) {
         events.append(event)

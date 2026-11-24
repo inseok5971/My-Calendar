@@ -25,6 +25,8 @@ struct EventEditorSheet: View {
         @Published var hasRecurrenceEndDate: Bool
         @Published var recurrenceEndDate: Date
         @Published var linkedFolderPath: String?
+        @Published var aiSummary: String?
+        @Published var isAILoading: Bool = false
 
         init(event: ScheduleEvent?, initialStartDate: Date) {
             if let event {
@@ -40,6 +42,7 @@ struct EventEditorSheet: View {
                 self.hasRecurrenceEndDate = (event.recurrenceEndDate != nil)
                 self.recurrenceEndDate = event.recurrenceEndDate ?? event.startDate.addingTimeInterval(86400 * 90)
                 self.linkedFolderPath = event.linkedFolderPath
+                self.aiSummary = event.aiSummary
             } else {
                 self.title = ""
                 self.notes = ""
@@ -53,6 +56,7 @@ struct EventEditorSheet: View {
                 self.hasRecurrenceEndDate = false
                 self.recurrenceEndDate = initialStartDate.addingTimeInterval(86400 * 90)
                 self.linkedFolderPath = nil
+                self.aiSummary = nil
             }
         }
     }
@@ -272,33 +276,68 @@ struct EventEditorSheet: View {
 
                 Section("프로젝트 폴더 연결 (Finder 바로가기)") {
                     if let path = form.linkedFolderPath, !path.isEmpty {
-                        HStack(spacing: 8) {
-                            MiniPostItFolderTag(folderPath: path)
+                        VStack(alignment: .leading, spacing: 8) {
+                            HStack(spacing: 8) {
+                                MiniPostItFolderTag(folderPath: path)
 
-                            Spacer()
+                                Spacer()
 
-                            Button("폴더 열기") {
-                                FolderHelper.openFolder(at: path)
+                                Button("🤖 AI 브리핑") {
+                                    form.isAILoading = true
+                                    Task {
+                                        let summary = await AIService.shared.summarizeFolder(folderPath: path, apiKey: store.settings.geminiApiKey)
+                                        await MainActor.run {
+                                            form.aiSummary = summary
+                                            form.isAILoading = false
+                                        }
+                                    }
+                                }
+                                .buttonStyle(.borderedProminent)
+                                .tint(.purple)
+                                .controlSize(.small)
+                                .disabled(form.isAILoading)
+
+                                Button("열기") {
+                                    FolderHelper.openFolder(at: path)
+                                }
+                                .buttonStyle(.bordered)
+                                .controlSize(.small)
+
+                                Button("변경") {
+                                    if let chosen = FolderHelper.chooseFolder() {
+                                        form.linkedFolderPath = chosen
+                                    }
+                                }
+                                .buttonStyle(.bordered)
+                                .controlSize(.small)
+
+                                Button {
+                                    form.linkedFolderPath = nil
+                                    form.aiSummary = nil
+                                } label: {
+                                    Image(systemName: "xmark.circle.fill")
+                                        .foregroundStyle(.secondary)
+                                }
+                                .buttonStyle(.plain)
+                                .help("폴더 연결 해제")
                             }
-                            .buttonStyle(.bordered)
-                            .controlSize(.small)
 
-                            Button("변경") {
-                                if let chosen = FolderHelper.chooseFolder() {
-                                    form.linkedFolderPath = chosen
+                            if form.isAILoading {
+                                HStack(spacing: 6) {
+                                    ProgressView().controlSize(.small)
+                                    Text("AI가 폴더 문서를 요약하는 중...").font(.caption).foregroundColor(.secondary)
+                                }
+                                .padding(.vertical, 4)
+                            } else if let summary = form.aiSummary {
+                                VStack(alignment: .leading, spacing: 4) {
+                                    Text(summary)
+                                        .font(.caption)
+                                        .foregroundColor(.primary)
+                                        .padding(8)
+                                        .background(Color.purple.opacity(0.1))
+                                        .cornerRadius(6)
                                 }
                             }
-                            .buttonStyle(.bordered)
-                            .controlSize(.small)
-
-                            Button {
-                                form.linkedFolderPath = nil
-                            } label: {
-                                Image(systemName: "xmark.circle.fill")
-                                    .foregroundStyle(.secondary)
-                            }
-                            .buttonStyle(.plain)
-                            .help("폴더 연결 해제")
                         }
                     } else {
                         Button {
@@ -353,6 +392,7 @@ struct EventEditorSheet: View {
                     updated.recurrence = form.recurrence
                     updated.recurrenceEndDate = (form.recurrence != .none && form.hasRecurrenceEndDate) ? form.recurrenceEndDate : nil
                     updated.linkedFolderPath = form.linkedFolderPath
+                    updated.aiSummary = form.aiSummary
                     onSave(updated)
                     dismiss()
                 }

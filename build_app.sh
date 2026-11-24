@@ -76,4 +76,8 @@ cp -R "${STAGE_DIR}" "${BUNDLE_DIR}"
 
 echo "2. Built ${BUNDLE_DIR} successfully!"
 
+echo "3. Creating MyCalendar-Mac.zip..."
+rm -f MyCalendar-Mac.zip
+zip -r -y -q MyCalendar-Mac.zip "${BUNDLE_DIR}"
+
 echo "Done build_app.sh!"

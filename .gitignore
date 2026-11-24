@@ -8,3 +8,9 @@ dist/
 build-staging/
 MyCalendar.app/
 *.zip
+
+# Contest Working Docs (Local only)
+CLAUDE_SEJONG_CALENDAR_SUMMARY.md
+SEJONG_AI_CONTEST_GUIDE.md
+*.pdf
+*.txt

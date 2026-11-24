@@ -149,6 +149,17 @@ struct SettingsSheet: View {
                         }
                     }
                 }
+
+                Section("🤖 AI 스마트 엔진 설정 (공모전 트랙)") {
+                    TextField("Google Gemini API Key (선택 사항)", text: $store.settings.geminiApiKey)
+                        .textFieldStyle(.roundedBorder)
+                        .onChange(of: store.settings.geminiApiKey) { _, _ in
+                            store.save()
+                        }
+                    Text("💡 API 키를 비워두셔도 내장 스마트 규칙 엔진이 100% 오프라인으로 작동합니다. Gemini 키 입력 시 고지능 자연어 파싱 및 폴더 브리핑을 지원합니다.")
+                        .font(.caption2)
+                        .foregroundStyle(.secondary)
+                }
             }
             .formStyle(.grouped)
         }

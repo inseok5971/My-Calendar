@@ -155,6 +155,7 @@ struct ScheduleEvent: Identifiable, Codable, Equatable, Sendable {
     var recurrenceEndDate: Date? = nil
     var completedDates: Set<String> = []
     var linkedFolderPath: String? = nil
+    var aiSummary: String? = nil
 
     var linkedFolderName: String? {
         guard let linkedFolderPath, !linkedFolderPath.isEmpty else { return nil }
@@ -166,7 +167,7 @@ struct ScheduleEvent: Identifiable, Codable, Equatable, Sendable {
     }
 
     enum CodingKeys: String, CodingKey {
-        case id, title, notes, startDate, endDate, category, reminderOffsets, isCompleted, linkedTodoID, periodType, isAllDay, recurrence, recurrenceEndDate, completedDates, linkedFolderPath
+        case id, title, notes, startDate, endDate, category, reminderOffsets, isCompleted, linkedTodoID, periodType, isAllDay, recurrence, recurrenceEndDate, completedDates, linkedFolderPath, aiSummary
     }
 
     init(
@@ -220,6 +221,7 @@ struct ScheduleEvent: Identifiable, Codable, Equatable, Sendable {
         recurrenceEndDate = try c.decodeIfPresent(Date.self, forKey: .recurrenceEndDate)
         completedDates = try c.decodeIfPresent(Set<String>.self, forKey: .completedDates) ?? []
         linkedFolderPath = try c.decodeIfPresent(String.self, forKey: .linkedFolderPath)
+        aiSummary = try c.decodeIfPresent(String.self, forKey: .aiSummary)
     }
 
     static func dateKey(for date: Date) -> String {
@@ -326,6 +328,7 @@ struct TodoItem: Identifiable, Codable, Equatable, Sendable {
     var scheduledEventID: UUID? = nil
     var createdAt: Date = Date()
     var linkedFolderPath: String? = nil
+    var aiSummary: String? = nil
 
     var linkedFolderName: String? {
         guard let linkedFolderPath, !linkedFolderPath.isEmpty else { return nil }
@@ -409,9 +412,10 @@ struct AppSettings: Codable, Equatable, Sendable {
     var launchAtLogin: Bool = true
     var startMinimizedToMenuBar: Bool = false
     var isMiniBoardPinnedOnTop: Bool = true
+    var geminiApiKey: String = ""
 
     enum CodingKeys: String, CodingKey {
-        case theme, mainWindowOpacity, stickyWindowOpacity, openMiniBoardOnLaunch, enableDesktopNotifications, enableInAppToasts, enableSound, soundName, preReminderMenuBarOnly, enableDailySummary, dailySummaryHour, dailySummaryMinute, lastWindowMode, launchAtLogin, startMinimizedToMenuBar, isMiniBoardPinnedOnTop
+        case theme, mainWindowOpacity, stickyWindowOpacity, openMiniBoardOnLaunch, enableDesktopNotifications, enableInAppToasts, enableSound, soundName, preReminderMenuBarOnly, enableDailySummary, dailySummaryHour, dailySummaryMinute, lastWindowMode, launchAtLogin, startMinimizedToMenuBar, isMiniBoardPinnedOnTop, geminiApiKey
     }
 
     init(
@@ -468,6 +472,7 @@ struct AppSettings: Codable, Equatable, Sendable {
         launchAtLogin = try c.decodeIfPresent(Bool.self, forKey: .launchAtLogin) ?? true
         startMinimizedToMenuBar = try c.decodeIfPresent(Bool.self, forKey: .startMinimizedToMenuBar) ?? false
         isMiniBoardPinnedOnTop = try c.decodeIfPresent(Bool.self, forKey: .isMiniBoardPinnedOnTop) ?? true
+        geminiApiKey = try c.decodeIfPresent(String.self, forKey: .geminiApiKey) ?? ""
     }
 }
 
